@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowRead — Speed Reading</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1c1c28;
+    --border: #2a2a3d;
+    --accent: #e8ff47;
+    --accent2: #ff4778;
+    --text: #e8e8f0;
+    --muted: #6060a0;
+    --focal: #e8ff47;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 40px;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, var(--accent), #78ffde);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .logo span {
+    -webkit-text-fill-color: var(--muted);
+    font-size: 1rem;
+    letter-spacing: 6px;
+    display: block;
+    margin-top: -6px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 300;
+  }
+
+  .wpm-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  .wpm-badge strong {
+    color: var(--accent);
+    font-size: 1.1rem;
+  }
+
+  /* Reader Display */
+  .reader-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 60px 40px;
+    text-align: center;
+    position: relative;
+    margin-bottom: 24px;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Focal line */
+  .focal-line {
+    position: absolute;
+    top: 50%;
+    left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), var(--border), transparent);
+    transform: translateY(-30px);
+  }
+
+  /* Focal point marker */
+  .focal-marker {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) translateY(-30px);
+    width: 2px;
+    height: 60px;
+    background: var(--accent);
+    opacity: 0.15;
+  }
+
+  .word-display {
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 500;
+    letter-spacing: 2px;
+    line-height: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    user-select: none;
+  }
+
+  .word-before { color: var(--muted); }
+  .word-focal { color: var(--focal); }
+  .word-after { color: var(--muted); }
+
+  .word-display.flash {
+    animation: flash 0.08s ease-out;
+  }
+
+  @keyframes flash {
+    0% { transform: scale(0.96); opacity: 0.6; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--border);
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #78ffde);
+    transition: width 0.1s linear;
+    width: 0%;
+  }
+
+  /* Context strip */
+  .context-strip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.7;
+    font-family: 'DM Mono', monospace;
+    min-height: 56px;
+    letter-spacing: 0.3px;
+    transition: all 0.3s;
+  }
+
+  .context-strip .highlight-word {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 2px;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(232,255,71,0.05);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0a0a0f;
+    font-weight: 500;
+    min-width: 120px;
+  }
+
+  .btn-primary:hover {
+    background: #f5ff80;
+    color: #0a0a0f;
+    border-color: #f5ff80;
+  }
+
+  .btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  /* Speed control */
+  .speed-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+  }
+
+  .speed-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 120px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(232,255,71,0.4);
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    flex: 1;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* Text input area */
+  .input-section {
+    margin-bottom: 24px;
+  }
+
+  .input-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .input-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    padding: 16px;
+    border-radius: 6px;
+    resize: vertical;
+    min-height: 120px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(232,255,71,0.1);
+  }
+
+  /* Sample texts */
+  .samples {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .sample-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    padding: 5px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .sample-btn:hover {
+    border-color: var(--muted);
+    color: var(--text);
+  }
+
+  /* Idle state hint */
+  .idle-hint {
+    position: absolute;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* Finish screen */
+  .finish-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s;
+    border-radius: 8px;
+  }
+
+  .finish-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .finish-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    letter-spacing: 6px;
+    color: var(--accent);
+  }
+
+  .finish-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    color: var(--muted);
+  }
+
+  /* Keyboard hint */
+  .kbd-hint {
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-top: 8px;
+  }
+
+  kbd {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: inherit;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      FlowRead
+      <span>SPEED READING</span>
+    </div>
+    <div class="wpm-badge">
+      <strong id="currentWpm">300</strong> WPM
+    </div>
+  </header>
+
+  <!-- Reader Display -->
+  <div class="reader-container" id="readerContainer">
+    <div class="focal-line"></div>
+    <div class="focal-marker"></div>
+    <div class="idle-hint" id="idleHint">ADD TEXT BELOW ↓</div>
+    <div class="word-display" id="wordDisplay"></div>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="finish-overlay" id="finishOverlay">
+      <div class="finish-title">DONE</div>
+      <div class="finish-sub" id="finishStats">—</div>
+    </div>
+  </div>
+
+  <!-- Context Strip -->
+  <div class="context-strip" id="contextStrip">
+    Context will appear here as you read...
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-value" id="statWord">0</div>
+      <div class="stat-label">Word</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="statTotal">0</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="statPercent">0%</div>
+      <div class="stat-label">Progress</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="statTime">0s</div>
+      <div class="stat-label">Elapsed</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn btn-primary" id="playBtn" onclick="togglePlay()">PLAY</button>
+    <button class="btn" id="restartBtn" onclick="restart()">RESTART</button>
+    <button class="btn" onclick="stepBack()" id="backBtn">◀ BACK</button>
+    <div class="speed-section">
+      <span class="speed-label">Speed</span>
+      <input type="range" min="100" max="800" step="25" value="300" id="speedSlider" oninput="updateSpeed(this.value)">
+      <span class="speed-label" id="speedVal">300</span>
+    </div>
+  </div>
+
+  <!-- Text Input -->
+  <div class="input-section">
+    <div class="input-label">Your Text</div>
+    <textarea id="textInput" placeholder="Paste any text here to start speed reading...
+
+The app will flash one word at a time with the key letter highlighted in yellow — your eyes stay fixed, eliminating the biggest bottleneck in reading speed."></textarea>
+    <div class="samples">
+      <span style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);align-self:center;letter-spacing:1px;">SAMPLES:</span>
+      <button class="sample-btn" onclick="loadSample(0)">Science</button>
+      <button class="sample-btn" onclick="loadSample(1)">Philosophy</button>
+      <button class="sample-btn" onclick="loadSample(2)">Story</button>
+    </div>
+  </div>
+
+  <div class="kbd-hint">
+    <kbd>SPACE</kbd> play/pause &nbsp; <kbd>←</kbd> back &nbsp; <kbd>R</kbd> restart
+  </div>
+</div>
+
+<script>
+const samples = [
+  `The human brain processes visual information at an extraordinary rate, capable of recognizing images in as little as thirteen milliseconds. Yet when we read traditional text, our eyes constantly jump back and forth in a series of movements called saccades. These backward glances, known as regressions, account for a significant portion of reading time. By eliminating eye movement entirely and presenting words one at a time, speed reading techniques like rapid serial visual presentation can dramatically increase reading throughput. The key insight is that comprehension does not suffer when words are presented sequentially, provided the focal point remains consistent and the reader maintains focus.`,
+
+  `The examined life, Socrates argued, is the only life worth living. This deceptively simple claim has profound implications for how we approach our daily existence. To examine one's life is not merely to reflect upon it, but to subject it to rigorous questioning — to ask whether our values are genuinely our own or simply inherited, whether our beliefs survive scrutiny, whether the person we present to the world corresponds to who we truly are. Philosophy, in this sense, is not an academic exercise confined to lecture halls and dusty texts. It is the ongoing practice of waking up.`,
+
+  `She found the letter on a Tuesday, buried beneath three months of unopened mail and one very dead houseplant. The handwriting was her grandmother's — the deliberate, slanted loops she had spent decades trying to replicate in her own notebooks. The envelope had no return address, no stamp, no postmark. Just her name, written as if the person who wrote it had all the time in the world and intended to use every second of it. Inside, a single page, and at the bottom, four words that would unravel the next six months of her life: I left you something.`
+];
+
+let words = [];
+let currentIndex = 0;
+let isPlaying = false;
+let wpm = 300;
+let timer = null;
+let startTime = null;
+let elapsedTimer = null;
+
+function getORP(word) {
+  // Optimal Recognition Point — roughly 1/3 from start
+  const clean = word.replace(/[^a-zA-Z0-9]/g, '');
+  if (clean.length === 0) return { before: '', focal: word[0] || '', after: '' };
+  
+  let orp = Math.max(0, Math.floor(clean.length / 3) - (clean.length > 8 ? 1 : 0));
+  
+  // Find the focal char position in original word (skip leading non-alpha)
+  let alphCount = 0;
+  let focalPos = 0;
+  for (let i = 0; i < word.length; i++) {
+    if (/[a-zA-Z0-9]/.test(word[i])) {
+      if (alphCount === orp) { focalPos = i; break; }
+      alphCount++;
+    }
+  }
+  
+  return {
+    before: word.slice(0, focalPos),
+    focal: word[focalPos],
+    after: word.slice(focalPos + 1)
+  };
+}
+
+function showWord(index) {
+  const display = document.getElementById('wordDisplay');
+  if (index < 0 || index >= words.length) return;
+  
+  const hintEl = document.getElementById('idleHint');
+  if (hintEl) hintEl.style.display = 'none';
+
+  const word = words[index];
+  const { before, focal, after } = getORP(word);
+  
+  display.innerHTML = `<span class="word-before">${before}</span><span class="word-focal">${focal}</span><span class="word-after">${after}</span>`;
+  display.classList.remove('flash');
+  void display.offsetWidth; // reflow
+  display.classList.add('flash');
+  
+  // Update progress
+  const pct = words.length > 1 ? (index / (words.length - 1)) * 100 : 100;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('statWord').textContent = index + 1;
+  document.getElementById('statTotal').textContent = words.length;
+  document.getElementById('statPercent').textContent = Math.round(pct) + '%';
+  
+  // Context strip — show surrounding words
+  const ctx = words.slice(Math.max(0, index - 4), Math.min(words.length, index + 8));
+  const ctxStart = Math.max(0, index - 4);
+  let ctxHtml = ctx.map((w, i) => {
+    if (ctxStart + i === index) return `<span class="highlight-word">${w}</span>`;
+    return w;
+  }).join(' ');
+  document.getElementById('contextStrip').innerHTML = '...' + ctxHtml + '...';
+}
+
+function getDelay() {
+  // Adjust delay for word length and punctuation
+  const word = words[currentIndex] || '';
+  let base = (60 / wpm) * 1000;
+  if (word.length > 8) base *= 1.1;
+  if (/[.!?]$/.test(word)) base *= 1.5;
+  else if (/[,;:]$/.test(word)) base *= 1.2;
+  return Math.round(base);
+}
+
+function next() {
+  if (currentIndex >= words.length - 1) {
+    stop(true);
+    return;
+  }
+  currentIndex++;
+  showWord(currentIndex);
+  timer = setTimeout(next, getDelay());
+}
+
+function togglePlay() {
+  if (words.length === 0) {
+    loadText();
+    if (words.length === 0) return;
+  }
+  if (isPlaying) pause();
+  else play();
+}
+
+function play() {
+  if (words.length === 0) return;
+  isPlaying = true;
+  document.getElementById('playBtn').textContent = 'PAUSE';
+  document.getElementById('finishOverlay').classList.remove('show');
+  if (!startTime) startTime = Date.now();
+  elapsedTimer = setInterval(updateElapsed, 1000);
+  showWord(currentIndex);
+  timer = setTimeout(next, getDelay());
+}
+
+function pause() {
+  isPlaying = false;
+  document.getElementById('playBtn').textContent = 'PLAY';
+  clearTimeout(timer);
+  clearInterval(elapsedTimer);
+}
+
+function stop(finished) {
+  pause();
+  if (finished) {
+    const elapsed = startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
+    const actualWpm = elapsed > 0 ? Math.round((words.length / elapsed) * 60) : wpm;
+    document.getElementById('finishStats').textContent = 
+      `${words.length} words · ${elapsed}s · ~${actualWpm} WPM`;
+    document.getElementById('finishOverlay').classList.add('show');
+    startTime = null;
+  }
+}
+
+function restart() {
+  pause();
+  currentIndex = 0;
+  startTime = null;
+  document.getElementById('statTime').textContent = '0s';
+  document.getElementById('finishOverlay').classList.remove('show');
+  if (words.length > 0) {
+    showWord(0);
+    document.getElementById('progressBar').style.width = '0%';
+  }
+  document.getElementById('playBtn').textContent = 'PLAY';
+}
+
+function stepBack() {
+  if (currentIndex > 0) {
+    if (isPlaying) { clearTimeout(timer); }
+    currentIndex--;
+    showWord(currentIndex);
+    if (isPlaying) timer = setTimeout(next, getDelay());
+  }
+}
+
+function updateElapsed() {
+  if (!startTime) return;
+  const s = Math.round((Date.now() - startTime) / 1000);
+  document.getElementById('statTime').textContent = s + 's';
+}
+
+function updateSpeed(val) {
+  wpm = parseInt(val);
+  document.getElementById('speedVal').textContent = val;
+  document.getElementById('currentWpm').textContent = val;
+}
+
+function loadText() {
+  const text = document.getElementById('textInput').value.trim();
+  if (!text) return;
+  words = text.split(/\s+/).filter(w => w.length > 0);
+  currentIndex = 0;
+  startTime = null;
+  document.getElementById('statTotal').textContent = words.length;
+  document.getElementById('statWord').textContent = '0';
+  document.getElementById('statPercent').textContent = '0%';
+  document.getElementById('statTime').textContent = '0s';
+  document.getElementById('progressBar').style.width = '0%';
+  const idleHint = document.getElementById('idleHint');
+  if (idleHint) idleHint.style.display = 'none';
+  document.getElementById('finishOverlay').classList.remove('show');
+  showWord(0);
+}
+
+function loadSample(i) {
+  document.getElementById('textInput').value = samples[i];
+  pause();
+  loadText();
+}
+
+// Auto-load when text changes
+document.getElementById('textInput').addEventListener('input', () => {
+  if (!isPlaying) loadText();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA') return;
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.code === 'ArrowLeft') stepBack();
+  if (e.code === 'KeyR') restart();
+});
+
+// Init
+loadSample(0);
+</script>
+</body>
+</html>
