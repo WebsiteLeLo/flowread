@@ -133,7 +133,7 @@
 
   .word-display {
     font-family: 'DM Mono', monospace;
-    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-size: var(--word-size, clamp(2.5rem, 6vw, 4.5rem));
     font-weight: 500;
     letter-spacing: 2px;
     line-height: 1;
@@ -512,7 +512,7 @@
 
   .fs-word {
     font-family: 'DM Mono', monospace;
-    font-size: clamp(4rem, 10vw, 8rem);
+    font-size: var(--fs-word-size, clamp(4rem, 10vw, 8rem));
     font-weight: 500;
     letter-spacing: 4px;
     line-height: 1;
@@ -777,6 +777,11 @@
       <input type="range" min="100" max="800" step="25" value="300" id="speedSlider" oninput="updateSpeed(this.value)">
       <span class="speed-label" id="speedVal">300</span>
     </div>
+    <div class="speed-section">
+      <span class="speed-label">Size</span>
+      <input type="range" min="1" max="5" step="1" value="3" id="sizeSlider" oninput="updateSize(this.value)">
+      <span class="speed-label" id="sizeVal">M</span>
+    </div>
   </div>
 
   <!-- Text Input -->
@@ -827,6 +832,11 @@ The app will flash one word at a time with the key letter highlighted in yellow 
       <span class="fs-speed-label">WPM</span>
       <input type="range" min="100" max="800" step="25" value="300" id="fsSpeedSlider" oninput="updateSpeed(this.value); document.getElementById('speedSlider').value=this.value;">
       <span class="fs-speed-label" id="fsSpeedVal">300</span>
+    </div>
+    <div class="fs-speed-wrap">
+      <span class="fs-speed-label">SIZE</span>
+      <input type="range" min="1" max="5" step="1" value="3" id="fsSizeSlider" oninput="updateSize(this.value); document.getElementById('sizeSlider').value=this.value;">
+      <span class="fs-speed-label" id="fsSizeVal">M</span>
     </div>
   </div>
 
@@ -1021,6 +1031,24 @@ function updateSpeed(val) {
   document.getElementById('fsCurrentWpm').textContent = val;
   document.getElementById('fsSpeedSlider').value = val;
   document.getElementById('speedSlider').value = val;
+}
+
+const sizeLevels = [
+  { label: 'XS', normal: '1.8rem',  fs: '3rem'  },
+  { label: 'S',  normal: '2.5rem',  fs: '4.5rem' },
+  { label: 'M',  normal: 'clamp(2.5rem,6vw,4.5rem)', fs: 'clamp(4rem,10vw,8rem)' },
+  { label: 'L',  normal: '5rem',    fs: '10rem'  },
+  { label: 'XL', normal: '7rem',    fs: '14rem'  },
+];
+
+function updateSize(val) {
+  const level = sizeLevels[parseInt(val) - 1];
+  document.documentElement.style.setProperty('--word-size', level.normal);
+  document.documentElement.style.setProperty('--fs-word-size', level.fs);
+  document.getElementById('sizeVal').textContent = level.label;
+  document.getElementById('fsSizeVal').textContent = level.label;
+  document.getElementById('sizeSlider').value = val;
+  document.getElementById('fsSizeSlider').value = val;
 }
 
 function loadText() {
