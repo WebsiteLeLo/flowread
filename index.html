@@ -444,6 +444,274 @@
     font-family: inherit;
     font-size: inherit;
   }
+
+  /* Fullscreen overlay */
+  .fs-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--bg);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .fs-overlay.active {
+    display: flex;
+  }
+
+  /* Grid texture inside fullscreen */
+  .fs-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .fs-word-wrap {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    width: 100%;
+    padding: 0 40px;
+  }
+
+  /* Focal crosshair lines */
+  .fs-hline {
+    position: fixed;
+    top: 50%;
+    left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 5%, var(--border) 30%, var(--border) 70%, transparent 95%);
+    transform: translateY(-1px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .fs-vdot {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 80px;
+    background: var(--accent);
+    opacity: 0.12;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .fs-word {
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(4rem, 10vw, 8rem);
+    font-weight: 500;
+    letter-spacing: 4px;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    user-select: none;
+  }
+
+  .fs-word.flash {
+    animation: flash 0.08s ease-out;
+  }
+
+  .fs-context {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    max-width: 600px;
+    text-align: center;
+    line-height: 1.8;
+    min-height: 1.8em;
+    z-index: 1;
+  }
+
+  .fs-context .highlight-word {
+    color: var(--accent);
+  }
+
+  /* FS progress bar */
+  .fs-progress-wrap {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--border);
+    z-index: 2;
+  }
+
+  .fs-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #78ffde);
+    transition: width 0.1s linear;
+    width: 0%;
+  }
+
+  /* FS top bar */
+  .fs-topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    z-index: 2;
+    background: linear-gradient(to bottom, rgba(10,10,15,0.9), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .fs-overlay:hover .fs-topbar,
+  .fs-overlay.show-hud .fs-topbar {
+    opacity: 1;
+  }
+
+  .fs-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, var(--accent), #78ffde);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .fs-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .fs-wpm {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  .fs-wpm strong {
+    color: var(--accent);
+    font-size: 1rem;
+  }
+
+  .fs-exit-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    padding: 7px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .fs-exit-btn:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+
+  /* FS bottom controls */
+  .fs-bottombar {
+    position: fixed;
+    bottom: 10px; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 28px;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .fs-overlay:hover .fs-bottombar,
+  .fs-overlay.show-hud .fs-bottombar {
+    opacity: 1;
+  }
+
+  .fs-btn {
+    background: rgba(28,28,40,0.8);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    padding: 8px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .fs-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .fs-btn-primary {
+    background: rgba(232,255,71,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    min-width: 100px;
+  }
+
+  .fs-btn-primary:hover {
+    background: var(--accent);
+    color: #0a0a0f;
+  }
+
+  .fs-speed-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .fs-speed-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  .fs-kbd-hint {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: rgba(96,96,160,0.5);
+    letter-spacing: 2px;
+    white-space: nowrap;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .fs-overlay:hover .fs-kbd-hint,
+  .fs-overlay.show-hud .fs-kbd-hint {
+    opacity: 1;
+  }
+
+  /* Fullscreen button on main controls */
+  .btn-fs {
+    margin-left: auto;
+  }
 </style>
 </head>
 <body>
@@ -503,6 +771,7 @@
     <button class="btn btn-primary" id="playBtn" onclick="togglePlay()">PLAY</button>
     <button class="btn" id="restartBtn" onclick="restart()">RESTART</button>
     <button class="btn" onclick="stepBack()" id="backBtn">◀ BACK</button>
+    <button class="btn btn-fs" onclick="enterFullscreen()" id="fsBtn">⛶ FULLSCREEN</button>
     <div class="speed-section">
       <span class="speed-label">Speed</span>
       <input type="range" min="100" max="800" step="25" value="300" id="speedSlider" oninput="updateSpeed(this.value)">
@@ -525,7 +794,49 @@ The app will flash one word at a time with the key letter highlighted in yellow 
   </div>
 
   <div class="kbd-hint">
-    <kbd>SPACE</kbd> play/pause &nbsp; <kbd>←</kbd> back &nbsp; <kbd>R</kbd> restart
+    <kbd>SPACE</kbd> play/pause &nbsp; <kbd>←</kbd> back &nbsp; <kbd>R</kbd> restart &nbsp; <kbd>F</kbd> fullscreen
+  </div>
+</div>
+
+<!-- Fullscreen Overlay -->
+<div class="fs-overlay" id="fsOverlay">
+  <div class="fs-hline"></div>
+  <div class="fs-vdot"></div>
+
+  <!-- Top bar -->
+  <div class="fs-topbar">
+    <div class="fs-logo">FlowRead</div>
+    <div class="fs-topbar-right">
+      <div class="fs-wpm"><strong id="fsCurrentWpm">300</strong> WPM</div>
+      <button class="fs-exit-btn" onclick="exitFullscreen()">✕ EXIT</button>
+    </div>
+  </div>
+
+  <!-- Word display -->
+  <div class="fs-word-wrap">
+    <div class="fs-word" id="fsWordDisplay"></div>
+    <div class="fs-context" id="fsContextStrip"></div>
+  </div>
+
+  <!-- Bottom controls -->
+  <div class="fs-bottombar">
+    <button class="fs-btn" onclick="fsSterBack()">◀ BACK</button>
+    <button class="fs-btn fs-btn-primary" id="fsPlayBtn" onclick="togglePlay()">PLAY</button>
+    <button class="fs-btn" onclick="restart()">RESTART</button>
+    <div class="fs-speed-wrap">
+      <span class="fs-speed-label">WPM</span>
+      <input type="range" min="100" max="800" step="25" value="300" id="fsSpeedSlider" oninput="updateSpeed(this.value); document.getElementById('speedSlider').value=this.value;">
+      <span class="fs-speed-label" id="fsSpeedVal">300</span>
+    </div>
+  </div>
+
+  <div class="fs-kbd-hint">
+    <kbd>SPACE</kbd> play/pause &nbsp; <kbd>←</kbd> back &nbsp; <kbd>R</kbd> restart &nbsp; <kbd>ESC</kbd> exit
+  </div>
+
+  <!-- Progress bar -->
+  <div class="fs-progress-wrap">
+    <div class="fs-progress-bar" id="fsProgressBar"></div>
   </div>
 </div>
 
@@ -592,6 +903,16 @@ function showWord(index) {
   document.getElementById('statTotal').textContent = words.length;
   document.getElementById('statPercent').textContent = Math.round(pct) + '%';
   
+  // Sync fullscreen word display
+  const fsDisplay = document.getElementById('fsWordDisplay');
+  if (fsDisplay) {
+    fsDisplay.innerHTML = `<span class="word-before">${before}</span><span class="word-focal">${focal}</span><span class="word-after">${after}</span>`;
+    fsDisplay.classList.remove('flash');
+    void fsDisplay.offsetWidth;
+    fsDisplay.classList.add('flash');
+  }
+  document.getElementById('fsProgressBar').style.width = pct + '%';
+  
   // Context strip — show surrounding words
   const ctx = words.slice(Math.max(0, index - 4), Math.min(words.length, index + 8));
   const ctxStart = Math.max(0, index - 4);
@@ -600,6 +921,7 @@ function showWord(index) {
     return w;
   }).join(' ');
   document.getElementById('contextStrip').innerHTML = '...' + ctxHtml + '...';
+  document.getElementById('fsContextStrip').innerHTML = '...' + ctxHtml + '...';
 }
 
 function getDelay() {
@@ -635,6 +957,7 @@ function play() {
   if (words.length === 0) return;
   isPlaying = true;
   document.getElementById('playBtn').textContent = 'PAUSE';
+  document.getElementById('fsPlayBtn').textContent = 'PAUSE';
   document.getElementById('finishOverlay').classList.remove('show');
   if (!startTime) startTime = Date.now();
   elapsedTimer = setInterval(updateElapsed, 1000);
@@ -645,6 +968,7 @@ function play() {
 function pause() {
   isPlaying = false;
   document.getElementById('playBtn').textContent = 'PLAY';
+  document.getElementById('fsPlayBtn').textContent = 'PLAY';
   clearTimeout(timer);
   clearInterval(elapsedTimer);
 }
@@ -693,6 +1017,10 @@ function updateSpeed(val) {
   wpm = parseInt(val);
   document.getElementById('speedVal').textContent = val;
   document.getElementById('currentWpm').textContent = val;
+  document.getElementById('fsSpeedVal').textContent = val;
+  document.getElementById('fsCurrentWpm').textContent = val;
+  document.getElementById('fsSpeedSlider').value = val;
+  document.getElementById('speedSlider').value = val;
 }
 
 function loadText() {
@@ -729,6 +1057,41 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
   if (e.code === 'ArrowLeft') stepBack();
   if (e.code === 'KeyR') restart();
+  if (e.code === 'KeyF') enterFullscreen();
+  if (e.code === 'Escape') exitFullscreen();
+});
+
+// Fullscreen
+function enterFullscreen() {
+  if (words.length === 0) { loadText(); if (words.length === 0) return; }
+  const overlay = document.getElementById('fsOverlay');
+  overlay.classList.add('active');
+  // Show HUD briefly then hide
+  overlay.classList.add('show-hud');
+  setTimeout(() => overlay.classList.remove('show-hud'), 2000);
+  // Try native fullscreen
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+  if (currentIndex < words.length) showWord(currentIndex);
+}
+
+function exitFullscreen() {
+  document.getElementById('fsOverlay').classList.remove('active');
+  if (document.fullscreenElement && document.exitFullscreen) {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+function fsSterBack() {
+  stepBack();
+}
+
+// Exit fullscreen when browser ESC is used
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    document.getElementById('fsOverlay').classList.remove('active');
+  }
 });
 
 // Init
